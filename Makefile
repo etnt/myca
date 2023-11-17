@@ -1,65 +1,21 @@
-#
-# Some simple CA handling:
-#
-#   make all          - Generate CA cert and one Server cert.
-#
-#   make client       - Generate a new Client cert.
-#
-#   make all_clean    - Beware!! This will remove everything!
-#
+.PHONY: all compile xref clean server client
 
-DIRS = certs crl private client_keys
+all: CA compile xref
 
-.PHONY: all client all_clean
+server:
+	rebar3 shell --sname server --apps ssl,ranch,cowboy
 
-all: index.txt serial crlnumber SUBJECT.env create_dirs gen_root_ca gen_server_cert
+client:
+	rebar3 shell --sname client --apps ssl,gun
 
-client: gen_client_cert
+compile:
+	rebar3 compile
 
-all_clean:
-	rm -f index.txt* serial* crlnumber*
-	rm -rf $(DIRS)
-	rm -i SUBJECT.env
+xref:
+	rebar3 xref
 
-index.txt:
-	touch ./index.txt
+CA:
+	git clone --depth 1 https://github.com/etnt/myca.git CA
 
-serial:
-	echo "01" > ./serial
-
-crlnumber:
-	echo "1000" > ./crlnumber
-
-SUBJECT.env:
-	./scripts/gen-subject-env.sh
-
-#
-# Generate Root CA
-#
-.PHONY: gen_root_ca
-gen_root_ca: private/cakey.pem
-
-private/cakey.pem:
-	./scripts/gen-root-ca.sh
-
-#
-# Generate Server cert
-#
-.PHONY: gen_server_cert
-gen_server_cert: certs/server.key.pem
-
- certs/server.key.pem:
-	./scripts/gen-server-cert.sh
-
-#
-# Generate Client cert
-#
-.PHONY: gen_client_cert
-gen_client_cert:
-	./scripts/gen-client-cert.sh
-
-
-create_dirs: $(DIRS)
-
-$(DIRS):
-	mkdir $@
+clean:
+	rebar3 clean
