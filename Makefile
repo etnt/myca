@@ -10,9 +10,11 @@
 
 DIRS = certs crl private client_keys
 
-.PHONY: all client all_clean
+.PHONY: all client all_clean run_scripts
 
-all: index.txt serial crlnumber SUBJECT.env create_dirs gen_root_ca gen_server_cert
+all: index.txt serial crlnumber SUBJECT.env create_dirs run_scripts
+
+run_scripts: gen_root_ca gen_server_cert init_crl
 
 client: gen_client_cert
 
@@ -57,6 +59,13 @@ gen_server_cert: certs/server.key.pem
 .PHONY: gen_client_cert
 gen_client_cert:
 	./scripts/gen-client-cert.sh
+
+#
+# Init the CRL
+#
+.PHONY: init_crl
+init_crl:
+	./scripts/init-crl.sh
 
 
 create_dirs: $(DIRS)
