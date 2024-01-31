@@ -18,10 +18,10 @@ FNAME=""${EMAIL}_${DTAG}""
 openssl genrsa -out client_keys/${FNAME}.key 4096
 
 ## generate certificate signing request
-openssl req -config ./openssl.cnf -new -key client_keys/${FNAME}.key -out certs/${FNAME}.csr -subj "/C=${CC}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=client/CN=${CNAME}/emailAddress=${EMAIL}"
+openssl req -new -key client_keys/${FNAME}.key -out certs/${FNAME}.csr -subj "/C=${CC}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=client/CN=${CNAME}/emailAddress=${EMAIL}"
 
 ## generate and sign the server certificate using rootca certificate
-openssl ca -config ./openssl.cnf -notext -batch -in certs/${FNAME}.csr -out client_keys/${FNAME}.crt -subj "/C=${CC}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=client/CN=${CNAME}/emailAddress=${EMAIL}"
+openssl ca -config openssl.cnf -notext -batch -in certs/${FNAME}.csr -out client_keys/${FNAME}.crt -subj "/C=${CC}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=client/CN=${CNAME}/emailAddress=${EMAIL}"
 
 ## Use this .pem file as the 'certfile' in the Erlang TLS client_opts()
 cat client_keys/${FNAME}.key client_keys/${FNAME}.crt > client_keys/${FNAME}.pem
