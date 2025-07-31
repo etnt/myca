@@ -29,10 +29,10 @@ if [ "${SFLAG}x" != "Vx" ]; then
 fi
 
 # Revoke cert (mark it in the index.txt file)
-openssl ca -config openssl.cnf -revoke ${RFILE}
+openssl ca -config ./openssl.cnf -revoke ${RFILE}
 
 # Generate a new CRL
-openssl ca -config openssl.cnf -gencrl -out crl/rootca.crl
+openssl ca -config ./openssl.cnf -gencrl -out crl/rootca.crl
 
 # Setup a hash link, remove the old one
 # See: https://www.erlang.org/doc/man/ssl#type-cert_pem

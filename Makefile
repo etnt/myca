@@ -8,11 +8,11 @@
 #   make all_clean    - Beware!! This will remove everything!
 #
 
-DIRS = certs crl private client_keys
+DIRS = certs csr crl private client_keys
 
 .PHONY: all client all_clean run_scripts
 
-all: index.txt serial crlnumber SUBJECT.env create_dirs run_scripts
+all: create_dirs index.txt serial crlnumber SUBJECT.env run_scripts
 
 run_scripts: gen_root_ca gen_server_cert init_crl
 

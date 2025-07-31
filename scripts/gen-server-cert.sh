@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 
-#!/usr/bin/env sh
-
 if [ -f SUBJECT.env ]; then
     . ./SUBJECT.env
 else
@@ -9,16 +7,13 @@ else
     exit 1
 fi
 
-## generate server private key
-openssl genrsa -out certs/server.key 4096
+# Create a new 384-bit Elliptic Curve private key and a CSR.
+# The CSR contains the public key and the identity (sibject line),
+# which can then be sent to a Certificate Authority (CA) to
+# be signed and issued as a digital certificate.
+openssl req -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -keyout private/server.key -nodes -out csr/server.csr -subj "/C=${CC}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=server/CN=${CNAME}/emailAddress=${EMAIL}"
 
-## generate certificate signing request
-openssl req -new -key certs/server.key -out certs/server.csr -subj "/C=${CC}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=server/CN=${CNAME}/emailAddress=${EMAIL}"
-
-## generate and sign the server certificate using rootca certificate
-openssl ca -config openssl.cnf -notext -batch -in certs/server.csr -out certs/server.crt -subj "/C=${CC}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=server/CN=${CNAME}/emailAddress=${EMAIL}"
-
-
-cat certs/server.key certs/server.crt > certs/server.pem
-
-rm certs/server.csr
+# Sign the server.csr certificate request using our local
+# CA configuration, creating a server certificate valid for
+# 10 years and saving it as: certs/server.crt.
+openssl ca -config ./openssl.cnf -batch -notext -in csr/server.csr -days 3652 -out certs/server.crt
