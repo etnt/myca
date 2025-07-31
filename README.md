@@ -34,8 +34,13 @@ The `Makefile` has three targets:
 So when you run `make all` it will create a number of subdirectories
 and ask you a for some info that is used when creating the certificates.
 This info will be stored in a file named: `SUBJECT.env`.
-It will also create a CA certificate and a Server certificate and key,
-which are stored in the `certs` subdirectory.
+It will also create a CA certificate and a Server certificate and key.
+The CA certificate (`ca.crt`) is stored in the `certs` subdirectory,
+while private keys are stored in the `private` subdirectory for security.
+Certificate signing requests (CSR) are stored in the `csr` subdirectory.
+
+The framework now uses modern elliptic curve cryptography (secp384r1) 
+instead of RSA for better security and performance.
 
 The CA certificate is used to sign all the other certificates.
 
@@ -52,50 +57,56 @@ use the `revoke-cert.sh` shell script that is located
 in the `scripts` subdirectory. Information about revoked
 certificates is stored in the `crl` subdirectory.
 
+## Key Features
+
+- **Modern Cryptography**: Uses elliptic curve cryptography (secp384r1) for enhanced security and performance
+- **Long-lived Certificates**: Generates certificates valid for 10 years (3652 days)
+- **Organized File Structure**: 
+  - `certs/` - CA and issued certificates
+  - `private/` - Private keys (CA and server)
+  - `csr/` - Certificate signing requests
+  - `client_keys/` - Client certificates and keys
+  - `crl/` - Certificate revocation lists
+
 ## Example
 
 ``` shell
 ❯ make all
-touch ./index.txt
-echo "01" > ./serial
-echo "1000" > ./crlnumber
-./scripts/gen-subject-env.sh
-Country Code: US
-State: Texas
-City: Dallas
-Organization: Ewing
-Common Name: Bobby Ewing
-Email: bobby@ewing.com
-
 mkdir certs
+mkdir csr
 mkdir crl
 mkdir private
 mkdir client_keys
+touch ./index.txt
+echo "01" > ./serial
+echo "1000" > ./crlnumber
 ./scripts/gen-root-ca.sh
+-----
 ./scripts/gen-server-cert.sh
-Using configuration from openssl.cnf
+-----
+Using configuration from ./openssl.cnf
 Check that the request matches the signature
 Signature ok
 Certificate Details:
         Serial Number: 1 (0x1)
         Validity
-            Not Before: Nov 16 22:41:30 2023 GMT
-            Not After : Nov 15 22:41:30 2024 GMT
+            Not Before: Jul 31 17:02:53 2025 GMT
+            Not After : Jul 31 17:02:53 2035 GMT
         Subject:
-            countryName               = US
-            stateOrProvinceName       = Texas
-            organizationName          = Ewing
+            countryName               = SE
+            stateOrProvinceName       = Stockholm
+            organizationName          = Kruskakli
             organizationalUnitName    = server
-            commonName                = Bobby Ewing
-            emailAddress              = bobby@ewing.com
+            commonName                = Karl Kruska
+            emailAddress              = karl@kruskakli.se
         X509v3 extensions:
-            X509v3 Subject Key Identifier: 
-                17:92:7E:88:1A:E2:2B:53:0E:0B:F9:6A:AD:08:DC:0A:B3:E8:A3:02
-            X509v3 Authority Key Identifier: 
-                3B:BF:78:CA:EF:38:FA:47:E1:33:D0:6F:99:15:DD:BD:70:84:88:42
+            X509v3 Subject Key Identifier:
+                36:2A:FF:90:88:B9:B8:F3:D7:64:17:8E:9D:06:CE:10:86:0A:05:A5
+            X509v3 Authority Key Identifier:
+                27:A2:55:7F:5A:07:09:40:12:0F:D0:B4:45:05:18:C4:38:D2:D0:7E
             X509v3 Basic Constraints: critical
                 CA:TRUE
-Certificate is to be certified until Nov 15 22:41:30 2024 GMT (365 days)
+Certificate is to be certified until Jul 31 17:02:53 2035 GMT (3652 days)
 
 Write out database with 1 new entries
 Database updated
@@ -106,7 +117,7 @@ Info about generated certificates are stored in a file named:
 
 ``` shell
 ❯ cat index.txt
-V       241115224130Z           01      unknown /C=US/ST=Texas/O=Ewing/OU=server/CN=Bobby Ewing/emailAddress=bobby@ewing.com
+V       350731170253Z           01      unknown /C=SE/ST=Stockholm/O=Kruskakli/OU=server/CN=Karl Kruska/emailAddress=karl@kruskakli.se
 ```
 
 The certificates are numbered and stored in the `certs` directory.
@@ -114,39 +125,45 @@ Example:
 
 ``` shell
 ❯ ls certs/
-01.pem  cacert.pem  server.crt  server.key  server.pem
+01.pem  02.pem  ca.crt  server.crt
+
+❯ ls private/
+ca.key  server.key
+
+❯ ls csr/
+server.csr
 ```
 
 To create a new client certificate:
 
 ``` shell
 ❯ make client
-./scripts/gen-client-cert.sh
-Enter client name: Sue Ellen
-Enter client email: sue@ewing.com
-Using configuration from openssl.cnf
+Enter client name: Rune Gustafsson
+Enter client email: rune@kruskakli.se
+-----
+Using configuration from ./openssl.cnf
 Check that the request matches the signature
 Signature ok
 Certificate Details:
         Serial Number: 2 (0x2)
         Validity
-            Not Before: Nov 16 22:47:48 2023 GMT
-            Not After : Nov 15 22:47:48 2024 GMT
+            Not Before: Jul 31 17:12:51 2025 GMT
+            Not After : Jul 31 17:12:51 2035 GMT
         Subject:
-            countryName               = US
-            stateOrProvinceName       = Texas
-            organizationName          = Ewing
+            countryName               = SE
+            stateOrProvinceName       = Stockholm
+            organizationName          = Kruskakli
             organizationalUnitName    = client
-            commonName                = Sue Ellen
-            emailAddress              = sue@ewing.com
+            commonName                = Rune Gustafsson
+            emailAddress              = rune@kruskakli.se
         X509v3 extensions:
-            X509v3 Subject Key Identifier: 
-                2F:FD:85:D6:05:52:BE:F3:AB:32:A9:21:9E:7C:38:1A:6E:35:9A:18
-            X509v3 Authority Key Identifier: 
-                3B:BF:78:CA:EF:38:FA:47:E1:33:D0:6F:99:15:DD:BD:70:84:88:42
+            X509v3 Subject Key Identifier:
+                EC:3C:D5:22:72:F7:D0:E9:2A:AC:E2:69:3C:D6:67:0E:30:AF:D5:6F
+            X509v3 Authority Key Identifier:
+                27:A2:55:7F:5A:07:09:40:12:0F:D0:B4:45:05:18:C4:38:D2:D0:7E
             X509v3 Basic Constraints: critical
                 CA:TRUE
-Certificate is to be certified until Nov 15 22:47:48 2024 GMT (365 days)
+Certificate is to be certified until Jul 31 17:12:51 2035 GMT (3652 days)
 
 Write out database with 1 new entries
 Database updated
@@ -157,11 +174,15 @@ the `index.txt` file as well as in the `certs` subdirectory:
 
 ``` shell
 ❯ cat index.txt
-V       241115224130Z           01      unknown /C=US/ST=Texas/O=Ewing/OU=server/CN=Bobby Ewing/emailAddress=bobby@ewing.com
-V       241115224748Z           02      unknown /C=US/ST=Texas/O=Ewing/OU=client/CN=Sue Ellen/emailAddress=sue@ewing.com
+V       350731170253Z           01      unknown /C=SE/ST=Stockholm/O=Kruskakli/OU=server/CN=Karl Kruska/emailAddress=karl@kruskakli.se
+V       350731171251Z           02      unknown /C=SE/ST=Stockholm/O=Kruskakli/OU=client/CN=Rune Gustafsson/emailAddress=rune@kruskakli.se
 
 ❯ ls certs
-01.pem  02.pem  cacert.pem  server.crt  server.key  server.pem
+01.pem  02.pem  ca.crt  server.crt
+
+❯ ls csr
+rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.csr
+server.csr
 ```
 
 Note the first character of each line in the `index.txt` file; 
@@ -174,22 +195,23 @@ Note that each `.pem` file contains both the key and the certificate.
 
 ``` shell
 ❯ ls client_keys/
-sue@ewing.com_Thu-Nov-16-22:47:46-UTC-2023.pem
-
-
+rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.crt
+rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.key
+rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.pem
 ```
 
 To try out revocation, we first create a new client cert.
-Out `index.txt` file now looks like:
+Our `index.txt` file now looks like:
 
 ``` shell
 ❯ cat index.txt
-V       241115224130Z           01      unknown /C=US/ST=Texas/O=Ewing/OU=server/CN=Bobby Ewing/emailAddress=bobby@ewing.com
-V       241115224748Z           02      unknown /C=US/ST=Texas/O=Ewing/OU=client/CN=Sue Ellen/emailAddress=sue@ewing.com
-V       241115231600Z           03      unknown /C=US/ST=Texas/O=Ewing/OU=client/CN=JR Ewing/emailAddress=jr@ewing.com
+V       350731170253Z           01      unknown /C=SE/ST=Stockholm/O=Kruskakli/OU=server/CN=Karl Kruska/emailAddress=karl@kruskakli.se
+V       350731171251Z           02      unknown /C=SE/ST=Stockholm/O=Kruskakli/OU=client/CN=Rune Gustafsson/emailAddress=rune@kruskakli.se
+V       350731171811Z           03      unknown /C=SE/ST=Stockholm/O=Kruskakli/OU=client/CN=Bo Bengtsson/emailAddress=bo@kruskakli.se
+
 ```
 
-If we want to revoke the `02` (Sue Ellen) certificate, we do:
+If we want to revoke the `02` (Rune Gustafsson) certificate, we do:
 
 ``` shell
 ❯ ./scripts/revoke-cert.sh certs/02.pem 
@@ -202,21 +224,47 @@ Using configuration from openssl.cnf
 We can now see that the certificate has been revoked by looking into the
 `index.txt` file again (note the `R` status flag):
 
-``` shell
+```shell
 ❯ cat index.txt
-V       241115224130Z           01      unknown /C=US/ST=Texas/O=Ewing/OU=server/CN=Bobby Ewing/emailAddress=bobby@ewing.com
-R       241115224748Z   231116232122Z   02      unknown /C=US/ST=Texas/O=Ewing/OU=client/CN=Sue Ellen/emailAddress=sue@ewing.com
-V       241115231600Z           03      unknown /C=US/ST=Texas/O=Ewing/OU=client/CN=JR Ewing/emailAddress=jr@ewing.com
+V       350731170253Z           01      unknown /C=SE/ST=Stockholm/O=Kruskakli/OU=server/CN=Karl Kruska/emailAddress=karl@kruskakli.se
+R       350731171251Z   250731171940Z   02      unknown /C=SE/ST=Stockholm/O=Kruskakli/OU=client/CN=Rune Gustafsson/emailAddress=rune@kruskakli.se
+V       350731171811Z           03      unknown /C=SE/ST=Stockholm/O=Kruskakli/OU=client/CN=Bo Bengtsson/emailAddress=bo@kruskakli.se
 ```
 
 We have also created a CRL file according to how the Erlang SSL library want it:
 
-``` shell
+```shell
 ❯ ls -l crl
 lrwxrwxrwx 1 tobbe tobbe   10 Nov 16 23:21 f0c82f1c.r0 -> rootca.crl
 -rw-r--r-- 1 tobbe tobbe 1125 Nov 16 23:21 rootca.crl
 ```
 
+We can print info about the revoked certificate as:
+```shell
+❯ ./scripts/print-crl.sh 
+Certificate Revocation List (CRL):
+        Version 2 (0x1)
+        Signature Algorithm: ecdsa-with-SHA256
+        Issuer: C=SE, ST=Stockholm, L=EkerÃ¶, O=Kruskakli, OU=root, CN=Karl Kruska, emailAddress=karl@kruskakli.se
+        Last Update: Jul 31 17:19:40 2025 GMT
+        Next Update: Aug 30 17:19:40 2025 GMT
+        CRL extensions:
+            X509v3 Authority Key Identifier: 
+                27:A2:55:7F:5A:07:09:40:12:0F:D0:B4:45:05:18:C4:38:D2:D0:7E
+            X509v3 CRL Number: 
+                4097
+Revoked Certificates:
+    Serial Number: 02
+        Revocation Date: Jul 31 17:19:40 2025 GMT
+    Signature Algorithm: ecdsa-with-SHA256
+    Signature Value:
+        30:65:02:30:17:18:d7:8b:09:a9:f7:2c:e2:a5:f6:fc:6c:cb:
+        43:9b:22:2f:ff:a0:af:18:84:57:84:9a:cf:ff:40:b6:0e:35:
+        9a:43:03:2f:44:01:ae:6f:ba:03:33:4b:dc:4e:8e:40:02:31:
+        00:c5:39:ee:6a:3e:c2:02:6d:f3:bc:b8:8e:40:23:84:5c:0b:
+        95:2e:c9:53:ab:6d:57:45:7c:b7:ac:1d:21:d8:45:44:99:6a:
+        15:3d:d6:d2:30:a8:4f:eb:31:b5:27:9d:e0
+```
 
 ### Erlang setup
 
@@ -234,9 +282,9 @@ The Erlang SSL/TLS server setup:
   %% certificate (an empty certificate is considered valid).
   %% Defaults to false.
 , {fail_if_no_peer_cert, true}
-, {cacertfile, "/home/tobbe/git/gunsmoke/CA/certs/cacert.pem"}
+, {cacertfile, "/home/tobbe/git/gunsmoke/CA/certs/ca.crt"}
 , {certfile, "/home/tobbe/git/gunsmoke/CA/certs/server.crt"}
-, {keyfile, "/home/tobbe/git/gunsmoke/CA/certs/server.key"}
+, {keyfile, "/home/tobbe/git/gunsmoke/CA/private/server.key"}
   %% Perform CRL (Certificate Revocation List) verification
   %% on the peer certificate.
 , {crl_check, peer}
@@ -251,9 +299,9 @@ The client can use the following:
   %% Note: when `verify` is set to `verify_peer`, we may
   %%  want to disable the Hostname check.
 , {server_name_indication, disable}
-, {cacertfile, "/home/tobbe/git/gunsmoke/CA/certs/cacert.pem"}
-%, {certfile, "/home/tobbe/git/gunsmoke/CA/client_keys/sue@ewing.com_Thu-Nov-16-22:47:46-UTC-2023.pem"}
-, {certfile, "/home/tobbe/git/gunsmoke/CA/client_keys/jr@ewing.com_Thu-Nov-16-23:15:59-UTC-2023.pem"}
+, {cacertfile, "/home/tobbe/git/gunsmoke/CA/certs/ca.crt"}
+%, {certfile, "/home/tobbe/git/gunsmoke/CA/client_keys/rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.pem"}
+, {certfile, "/home/tobbe/git/gunsmoke/CA/client_keys/bo@kruskakli.se_Thu-Jul-31-19:18:11-CEST-2025.pem"}
 ]
 ```
 
