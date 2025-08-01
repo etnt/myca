@@ -5,4 +5,4 @@ if [ ! -f "$1" ]; then
     exit 1
 fi
 
-openssl x509 -in $1 -text -noout
+openssl verify -CAfile certs/ca.crt -crl_check -CRLfile crl/rootca.crl "$1"

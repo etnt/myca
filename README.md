@@ -134,6 +134,8 @@ ca.key  server.key
 server.csr
 ```
 
+### Create Client certificate
+
 To create a new client certificate:
 
 ``` shell
@@ -200,6 +202,8 @@ rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.key
 rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.pem
 ```
 
+### Revoking a Client certificate
+
 To try out revocation, we first create a new client cert.
 Our `index.txt` file now looks like:
 
@@ -265,6 +269,36 @@ Revoked Certificates:
         95:2e:c9:53:ab:6d:57:45:7c:b7:ac:1d:21:d8:45:44:99:6a:
         15:3d:d6:d2:30:a8:4f:eb:31:b5:27:9d:e0
 ```
+
+### Verify a certificate
+
+To verify one of the self-signed cerificates we can do:
+
+```shell
+❯ ./scripts/verify-crt.sh client_keys/bo\@kruskakli.se_Thu-Jul-31-19\:18\:11-CEST-2025.crt
+client_keys/bo@kruskakli.se_Thu-Jul-31-19:18:11-CEST-2025.crt: OK
+
+❯ ./scripts/verify-crt.sh client_keys/rune\@kruskakli.se_Thu-Jul-31-19\:12\:51-CEST-2025.crt
+C=SE, ST=Stockholm, O=Kruskakli, OU=client, CN=Rune Gustafsson, emailAddress=rune@kruskakli.se
+error 23 at 0 depth lookup: certificate revoked
+error client_keys/rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.crt: verification failed
+```
+
+**Note:** we also check if the certificate has been revoked!
+
+### Certificate fingerprint
+
+Fingerprints provide a compact, immutable identifier (32 bytes vs 1-4KB certificate)
+that changes if any part of the certificate is modified, making them ideal for
+security-critical verification workflows.
+
+To produce a fingerprint of a certificate do:
+
+```shell
+ ❯ ./scripts/fingerprint.sh client_keys/bo\@kruskakli.se_Thu-Jul-31-19\:18\:11-CEST-2025.crt
+sha256 Fingerprint=28:2C:38:03:8C:B2:A1:69:5A:2E:E6:E9:E3:5D:A1:9C:92:F4:05:64:E5:2B:F8:A3:4E:25:12:99:02:B6:AD:B7
+```
+
 
 ### Erlang setup
 
