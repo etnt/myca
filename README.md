@@ -68,6 +68,11 @@ certificates is stored in the `crl` subdirectory.
   - `client_keys/` - Client certificates and keys
   - `crl/` - Certificate revocation lists
 
+The generated files will have one of the suffixes: `.crt`, .`.key` or `.pem`, where:
+    - `.crt` holds the certificate
+    - `.key` holds the private key
+    - `.pem` holds both the certificate and the private key
+
 ## Example
 
 ``` shell
@@ -125,7 +130,7 @@ Example:
 
 ``` shell
 ❯ ls certs/
-01.pem  02.pem  ca.crt  server.crt
+01.pem  ca.crt  server.crt
 
 ❯ ls private/
 ca.key  server.key
@@ -299,6 +304,40 @@ To produce a fingerprint of a certificate do:
 sha256 Fingerprint=28:2C:38:03:8C:B2:A1:69:5A:2E:E6:E9:E3:5D:A1:9C:92:F4:05:64:E5:2B:F8:A3:4E:25:12:99:02:B6:AD:B7
 ```
 
+### Extract the Certificate and Private Key from the .pem file
+
+A PEM (Privacy-Enhanced Mail) file is a base64-encoded container format that,
+in our case, contain both the Certificate and the Private Key.
+The `.pem` file is particularly useful for applications that need both the private
+key and certificate in a single file, like the SSL application in Erlang/OTP.
+
+```shell
+❯ ./scripts/pem-extract-cert.sh client_keys/bo\@kruskakli.se_Thu-Jul-31-19\:18\:11-CEST-2025.pem
+-----BEGIN CERTIFICATE-----
+MIICjDCCAhKgAwIBAgIBAzAKBggqhkjOPQQDAjCBjzELMAkGA1UEBhMCU0UxEjAQ
+BgNVBAgMCVN0b2NraG9sbTERMA8GA1UEBwwIRWtlcsODwrYxEjAQBgNVBAoMCUty
+dXNrYWtsaTENMAsGA1UECwwEcm9vdDEUMBIGA1UEAwwLS2FybCBLcnVza2ExIDAe
+BgkqhkiG9w0BCQEWEWthcmxAa3J1c2tha2xpLnNlMB4XDTI1MDczMTE3MTgxMVoX
+DTM1MDczMTE3MTgxMVowfTELMAkGA1UEBhMCU0UxEjAQBgNVBAgMCVN0b2NraG9s
+bTESMBAGA1UECgwJS3J1c2tha2xpMQ8wDQYDVQQLDAZjbGllbnQxFTATBgNVBAMM
+DEJvIEJlbmd0c3NvbjEeMBwGCSqGSIb3DQEJARYPYm9Aa3J1c2tha2xpLnNlMHYw
+EAYHKoZIzj0CAQYFK4EEACIDYgAEvtszQRmwY80lntSWLVLq93azSuF/kv+1gdA4
+QzRwud298GpjOkuDlb/xRY7XvIiITilq4B6ZX9dSjsJjI1mZBnw/rhQspJBQUoc8
+1CXc7aQlh/RACAB9vVIByquAoaevo1MwUTAdBgNVHQ4EFgQUmIqBae1z9cF3AawU
+2RgfH54TatIwHwYDVR0jBBgwFoAUJ6JVf1oHCUASD9C0RQUYxDjS0H4wDwYDVR0T
+AQH/BAUwAwEB/zAKBggqhkjOPQQDAgNoADBlAjEA+M2Zpi0exRm64rFk/8pcxft1
+xbSKzyQkkj6Kld9ggApZeO7Rdt8OWJ3k0spGj4dlAjBLGw3oNJlQybBZxj0McvPf
+H2/sawzoInRNn/FQ2vR7hMTZKaqWciiFdh3RTLNBD8A=
+-----END CERTIFICATE-----
+
+❯ ./scripts/pem-extract-key.sh client_keys/bo\@kruskakli.se_Thu-Jul-31-19\:18\:11-CEST-2025.pem
+-----BEGIN PRIVATE KEY-----
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAxh4slVnROYRIOgTpe
+LBZ3KcNsYANYxckirIt489cx2pbAruXPE3HIS06JjDjVwIOhZANiAAS+2zNBGbBj
+zSWe1JYtUur3drNK4X+S/7WB0DhDNHC53b3wamM6S4OVv/FFjte8iIhOKWrgHplf
+11KOwmMjWZkGfD+uFCykkFBShzzUJdztpCWH9EAIAH29UgHKq4Chp68=
+-----END PRIVATE KEY-----
+```
 
 ### Erlang setup
 
