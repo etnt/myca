@@ -61,6 +61,7 @@ certificates is stored in the `crl` subdirectory.
 
 - **Modern Cryptography**: Uses elliptic curve cryptography (secp384r1) for enhanced security and performance
 - **Long-lived Certificates**: Generates certificates valid for 10 years (3652 days)
+- **Subject Alternative Names (SAN)**: Support for multiple identities in client certificates including DNS names, IP addresses, email addresses, and URIs
 - **Organized File Structure**: 
   - `certs/` - CA and issued certificates
   - `private/` - Private keys (CA and server)
@@ -147,6 +148,7 @@ To create a new client certificate:
 ❯ make client
 Enter client name: Rune Gustafsson
 Enter client email: rune@kruskakli.se
+Do you want to add Subject Alternative Names (SANs)? (y/N): n
 -----
 Using configuration from ./openssl.cnf
 Check that the request matches the signature
@@ -206,6 +208,35 @@ rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.crt
 rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.key
 rune@kruskakli.se_Thu-Jul-31-19:12:51-CEST-2025.pem
 ```
+
+### Client Certificates with Subject Alternative Names (SAN)
+
+When creating client certificates, you can optionally include Subject Alternative Names (SANs) to make the certificate valid for multiple identities. SANs are useful when a certificate needs to be valid for multiple domains, IP addresses, email addresses, or URIs.
+
+The script will prompt you whether to add SANs, and if you choose yes, you can specify:
+
+- **DNS names**: Domain names (e.g., `api.example.com, service.internal.com`)
+- **IP addresses**: Specific IP addresses (e.g., `192.168.1.100, 10.0.1.50`)
+- **Email addresses**: Additional email identities (e.g., `admin@example.com, support@example.com`)
+- **URIs**: URI identifiers (e.g., `https://api.example.com/service`)
+
+Example session with SANs:
+
+``` shell
+❯ make client
+Enter client name: API Service
+Enter client email: api@example.com
+Do you want to add Subject Alternative Names (SANs)? (y/N): y
+Enter Subject Alternative Names (SANs) - press Enter to skip each type:
+DNS names (comma-separated): api.example.com, api-v2.example.com
+IP addresses (comma-separated): 192.168.1.100, 10.0.1.50
+Email addresses (comma-separated): support@example.com
+URIs (comma-separated): https://api.example.com/v1
+```
+
+The resulting certificate will be valid for all the specified identities, allowing clients to connect using any of the DNS names, IP addresses, or other specified identifiers.
+
+**Note**: You can press Enter to skip any SAN type you don't need. If you don't want any SANs, simply answer "N" (or press Enter) to the initial SAN prompt.
 
 ### Revoking a Client certificate
 
