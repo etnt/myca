@@ -91,8 +91,9 @@ fi
 # generate certificate signing request
 openssl req -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -keyout client_keys/${FNAME}.key -nodes -out csr/${FNAME}.csr -subj "/C=${CC}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=client/CN=${CNAME}/emailAddress=${EMAIL}"
 
-# generate and sign the server certificate using rootca certificate
-openssl ca -config "$CONFIG_FILE" -batch -notext -in csr/${FNAME}.csr -days 3652 -out client_keys/${FNAME}.crt
+# generate and sign the client certificate using rootca certificate
+# Use v3_client extensions for proper client certificate with OTP 28 compatibility
+openssl ca -config "$CONFIG_FILE" -extensions v3_client -batch -notext -in csr/${FNAME}.csr -days 3652 -out client_keys/${FNAME}.crt
 
 ## Use this .pem file as the 'certfile' in the Erlang TLS client_opts()
 cat client_keys/${FNAME}.key client_keys/${FNAME}.crt > client_keys/${FNAME}.pem

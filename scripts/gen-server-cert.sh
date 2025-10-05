@@ -16,4 +16,5 @@ openssl req -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -keyout private/serv
 # Sign the server.csr certificate request using our local
 # CA configuration, creating a server certificate valid for
 # 10 years and saving it as: certs/server.crt.
-openssl ca -config ./openssl.cnf -batch -notext -in csr/server.csr -days 3652 -out certs/server.crt
+# Use v3_server extensions for proper server certificate with OTP 28 compatibility
+openssl ca -config ./openssl.cnf -extensions v3_server -batch -notext -in csr/server.csr -days 3652 -out certs/server.crt
