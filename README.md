@@ -60,7 +60,12 @@ certificates is stored in the `crl` subdirectory.
 ## Key Features
 
 - **Modern Cryptography**: Uses elliptic curve cryptography (secp384r1) for enhanced security and performance
+- **OTP 28 Compatibility**: Certificates use explicit OID format for Extended Key Usage extensions, ensuring compatibility with Erlang/OTP 28's stricter X.509 validation
 - **Long-lived Certificates**: Generates certificates valid for 10 years (3652 days)
+- **Proper Certificate Types**: 
+  - Server certificates have "TLS Web Server Authentication" (1.3.6.1.5.5.7.3.1)
+  - Client certificates have "TLS Web Client Authentication" (1.3.6.1.5.5.7.3.2)
+- **Critical Extensions**: Basic Constraints and Key Usage marked as critical for enhanced security
 - **Subject Alternative Names (SAN)**: Support for multiple identities in client certificates including DNS names, IP addresses, email addresses, and URIs
 - **Organized File Structure**: 
   - `certs/` - CA and issued certificates
@@ -106,12 +111,18 @@ Certificate Details:
             commonName                = Karl Kruska
             emailAddress              = karl@kruskakli.se
         X509v3 extensions:
-            X509v3 Subject Key Identifier:
-                36:2A:FF:90:88:B9:B8:F3:D7:64:17:8E:9D:06:CE:10:86:0A:05:A5
-            X509v3 Authority Key Identifier:
-                27:A2:55:7F:5A:07:09:40:12:0F:D0:B4:45:05:18:C4:38:D2:D0:7E
             X509v3 Basic Constraints: critical
-                CA:TRUE
+                CA:FALSE
+            X509v3 Key Usage: critical
+                Digital Signature, Key Encipherment
+            X509v3 Extended Key Usage: critical
+                TLS Web Server Authentication
+            X509v3 Subject Key Identifier: 
+                5D:99:3A:33:10:3C:EB:03:3E:9B:6C:38:BE:DB:84:DB:D8:B5:17:0E
+            X509v3 Authority Key Identifier: 
+                F7:A2:5E:CA:B7:B2:A0:AA:99:E0:CF:ED:92:5F:6B:90:7F:97:99:93
+            X509v3 Subject Alternative Name: 
+                DNS:localhost, DNS:cryptic-server, IP Address:127.0.0.1, IP Address:0:0:0:0:0:0:0:1
 Certificate is to be certified until Jul 31 17:02:53 2035 GMT (3652 days)
 
 Write out database with 1 new entries
@@ -166,12 +177,16 @@ Certificate Details:
             commonName                = Rune Gustafsson
             emailAddress              = rune@kruskakli.se
         X509v3 extensions:
-            X509v3 Subject Key Identifier:
-                EC:3C:D5:22:72:F7:D0:E9:2A:AC:E2:69:3C:D6:67:0E:30:AF:D5:6F
-            X509v3 Authority Key Identifier:
-                27:A2:55:7F:5A:07:09:40:12:0F:D0:B4:45:05:18:C4:38:D2:D0:7E
             X509v3 Basic Constraints: critical
-                CA:TRUE
+                CA:FALSE
+            X509v3 Key Usage: critical
+                Digital Signature, Non Repudiation, Key Encipherment
+            X509v3 Extended Key Usage: critical
+                TLS Web Client Authentication
+            X509v3 Subject Key Identifier: 
+                3B:2A:BA:05:2F:A0:20:F5:3E:95:A8:AD:8F:5A:92:AD:96:05:C1:40
+            X509v3 Authority Key Identifier: 
+                F7:A2:5E:CA:B7:B2:A0:AA:99:E0:CF:ED:92:5F:6B:90:7F:97:99:93
 Certificate is to be certified until Jul 31 17:12:51 2035 GMT (3652 days)
 
 Write out database with 1 new entries
@@ -369,6 +384,45 @@ zSWe1JYtUur3drNK4X+S/7WB0DhDNHC53b3wamM6S4OVv/FFjte8iIhOKWrgHplf
 11KOwmMjWZkGfD+uFCykkFBShzzUJdztpCWH9EAIAH29UgHKq4Chp68=
 -----END PRIVATE KEY-----
 ```
+
+## OTP 28 Compatibility
+
+This CA framework generates certificates that are fully compatible with Erlang/OTP 28's stricter X.509 certificate validation. The key improvements include:
+
+### Enhanced Certificate Extensions
+
+- **Explicit OID Format**: Extended Key Usage extensions use explicit OID notation:
+  - Server certificates: `1.3.6.1.5.5.7.3.1` (TLS Web Server Authentication)
+  - Client certificates: `1.3.6.1.5.5.7.3.2` (TLS Web Client Authentication)
+
+- **Critical Extensions**: Basic Constraints and Key Usage are marked as `critical` for enhanced security validation
+
+- **Proper Certificate Types**: Server and client certificates have distinct, appropriate Extended Key Usage values
+
+- **Subject Alternative Names**: Server certificates include localhost and loopback addresses for development convenience
+
+### Benefits
+
+- **No Custom Verification**: Works with standard SSL `verify_peer` mode without custom verification functions
+- **Future-Proof**: Compatible with current and future Erlang/OTP versions
+- **Enhanced Security**: Critical extensions ensure stricter certificate validation
+- **Development Friendly**: Includes localhost SANs for easy local development
+
+### Migration from Older Certificates
+
+If you have existing certificates that don't work with OTP 28, simply regenerate them using this framework:
+
+```shell
+# Backup old certificates
+mv certs/server.crt certs/server.crt.old
+mv client_keys/your_client.crt client_keys/your_client.crt.old
+
+# Generate new OTP 28 compatible certificates
+make gen_server_cert
+make client  # Follow prompts for client certificate
+```
+
+The new certificates will work seamlessly with both older and newer Erlang/OTP versions.
 
 ### Erlang setup
 
