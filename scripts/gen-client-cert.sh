@@ -11,20 +11,27 @@ echo -n "Enter client name: " ; read CNAME
 echo -n "Enter client email: " ; read EMAIL
 
 # Ask if user wants to add Subject Alternative Names
-echo -n "Do you want to add Subject Alternative Names (SANs)? (y/N): " ; read ADD_SANS
+echo ""
+echo "Subject Alternative Names (SANs) allow additional identities in the certificate."
+echo "The email address will be automatically added to SAN for Cryptic username extraction."
+echo -n "Do you want to add additional SANs? (y/N): " ; read ADD_SANS
 
 # Initialize SAN variables
+# Always include the email in SAN for Cryptic username extraction
+EMAIL_SANS="$EMAIL"
 DNS_SANS=""
 IP_SANS=""
-EMAIL_SANS=""
 URI_SANS=""
 
-# Only prompt for SAN details if user wants to add them
+# Only prompt for additional SAN details if user wants them
 if [ "$ADD_SANS" = "y" ] || [ "$ADD_SANS" = "Y" ]; then
-    echo "Enter Subject Alternative Names (SANs) - press Enter to skip each type:"
+    echo "Enter additional Subject Alternative Names (SANs) - press Enter to skip each type:"
     echo -n "DNS names (comma-separated): " ; read DNS_SANS
     echo -n "IP addresses (comma-separated): " ; read IP_SANS
-    echo -n "Email addresses (comma-separated): " ; read EMAIL_SANS
+    echo -n "Additional email addresses (comma-separated): " ; read ADDITIONAL_EMAILS
+    if [ -n "$ADDITIONAL_EMAILS" ]; then
+        EMAIL_SANS="$EMAIL,$ADDITIONAL_EMAILS"
+    fi
     echo -n "URIs (comma-separated): " ; read URI_SANS
 fi
 
@@ -32,61 +39,54 @@ DTAG=`date | sed -e 's/ /-/g'`
 
 FNAME=""${EMAIL}_${DTAG}""
 
-# Build SAN string if any SAN values are provided
-SAN_STRING=""
-if [ -n "$DNS_SANS" ] || [ -n "$IP_SANS" ] || [ -n "$EMAIL_SANS" ] || [ -n "$URI_SANS" ]; then
-    SAN_PARTS=""
-    
-    if [ -n "$DNS_SANS" ]; then
-        # Convert comma-separated DNS names to SAN format
-        DNS_FORMATTED=$(echo "$DNS_SANS" | sed 's/,/, DNS:/g' | sed 's/^/DNS:/')
-        SAN_PARTS="$SAN_PARTS$DNS_FORMATTED"
-    fi
-    
-    if [ -n "$IP_SANS" ]; then
-        # Convert comma-separated IP addresses to SAN format
-        IP_FORMATTED=$(echo "$IP_SANS" | sed 's/,/, IP:/g' | sed 's/^/IP:/')
-        if [ -n "$SAN_PARTS" ]; then
-            SAN_PARTS="$SAN_PARTS, $IP_FORMATTED"
-        else
-            SAN_PARTS="$IP_FORMATTED"
-        fi
-    fi
-    
-    if [ -n "$EMAIL_SANS" ]; then
-        # Convert comma-separated email addresses to SAN format
-        EMAIL_FORMATTED=$(echo "$EMAIL_SANS" | sed 's/,/, email:/g' | sed 's/^/email:/')
-        if [ -n "$SAN_PARTS" ]; then
-            SAN_PARTS="$SAN_PARTS, $EMAIL_FORMATTED"
-        else
-            SAN_PARTS="$EMAIL_FORMATTED"
-        fi
-    fi
-    
-    if [ -n "$URI_SANS" ]; then
-        # Convert comma-separated URIs to SAN format
-        URI_FORMATTED=$(echo "$URI_SANS" | sed 's/,/, URI:/g' | sed 's/^/URI:/')
-        if [ -n "$SAN_PARTS" ]; then
-            SAN_PARTS="$SAN_PARTS, $URI_FORMATTED"
-        else
-            SAN_PARTS="$URI_FORMATTED"
-        fi
-    fi
-    
-    SAN_STRING="subjectAltName = $SAN_PARTS"
-    
-    # Create temporary config file with SAN extension
-    TEMP_CONFIG="/tmp/openssl_san_${FNAME}.cnf"
-    cp ./openssl.cnf "$TEMP_CONFIG"
-    
-    # Add SAN to the v3_client section
-    sed -i.bak "/# SAN will be added dynamically if provided/c\\
-$SAN_STRING" "$TEMP_CONFIG"
-    
-    CONFIG_FILE="$TEMP_CONFIG"
-else
-    CONFIG_FILE="./openssl.cnf"
+# Build SAN string - always include email for Cryptic username extraction
+SAN_PARTS=""
+
+# Add email first (always included)
+SAN_PARTS="email:$(echo "$EMAIL_SANS" | sed 's/,/, email:/g')"
+
+if [ -n "$DNS_SANS" ]; then
+    # Convert comma-separated DNS names to SAN format
+    DNS_FORMATTED=$(echo "$DNS_SANS" | sed 's/,/, DNS:/g' | sed 's/^/DNS:/')
+    SAN_PARTS="$SAN_PARTS, $DNS_FORMATTED"
 fi
+
+if [ -n "$IP_SANS" ]; then
+    # Convert comma-separated IP addresses to SAN format
+    IP_FORMATTED=$(echo "$IP_SANS" | sed 's/,/, IP:/g' | sed 's/^/IP:/')
+    SAN_PARTS="$SAN_PARTS, $IP_FORMATTED"
+fi
+
+if [ -n "$URI_SANS" ]; then
+    # Convert comma-separated URIs to SAN format
+    URI_FORMATTED=$(echo "$URI_SANS" | sed 's/,/, URI:/g' | sed 's/^/URI:/')
+    SAN_PARTS="$SAN_PARTS, $URI_FORMATTED"
+fi
+
+SAN_STRING="subjectAltName = $SAN_PARTS"
+
+# Create temporary config file with SAN extension
+TEMP_CONFIG="/tmp/openssl_san_${FNAME}.cnf"
+cp ./openssl.cnf "$TEMP_CONFIG"
+
+# Add SAN to the v3_client section
+sed -i.bak "/# SAN will be added dynamically if provided/c\\
+$SAN_STRING" "$TEMP_CONFIG"
+
+CONFIG_FILE="$TEMP_CONFIG"
+
+# Display what will be created
+echo ""
+echo "Creating certificate with:"
+echo "  Common Name (CN): $CNAME"
+echo "  Email: $EMAIL"
+echo "  Subject Alternative Names: $SAN_PARTS"
+echo "  Cryptic username will be extracted from: email local part"
+if [ -n "$EMAIL" ]; then
+    EXTRACTED_USERNAME=$(echo "$EMAIL" | cut -d'@' -f1)
+    echo "  → Cryptic username: $EXTRACTED_USERNAME"
+fi
+echo ""
 
 # generate certificate signing request
 openssl req -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 -keyout client_keys/${FNAME}.key -nodes -out csr/${FNAME}.csr -subj "/C=${CC}/ST=${STATE}/L=${CITY}/O=${ORG}/OU=client/CN=${CNAME}/emailAddress=${EMAIL}"
